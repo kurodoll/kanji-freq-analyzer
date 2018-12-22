@@ -56,10 +56,11 @@ for s in scripts:
 
     print(len(vocab_stats), 'unique vocab found. Uploading...', end=' ')
 
-    query = 'UPDATE scripts SET n_unique_vocab = %(vocab)s, vocab_stats = %(stats)s WHERE id = %(id)s;'  # noqa: E501
+    query = 'UPDATE scripts SET n_unique_vocab = %(vocab)s, vocab_stats = %(stats)s, file_size = %(file_size)s WHERE id = %(id)s;'  # noqa: E501
     db.run(query, {
         'vocab': len(vocab_stats),
         'stats': stats_json,
+        'file_size': os.path.getsize(filename),
         'id': s['id']
     })
 
