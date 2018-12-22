@@ -29,8 +29,6 @@ def analyze(script, analyzed_once=False):
                     'count': kanji_counts[kanji]
                 })
 
-            cursor.fetchall()
-
         db.run(
             "UPDATE scripts SET status = 'complete' WHERE id = %(id)s",
             {'id': script['id']})
