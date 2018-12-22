@@ -33,7 +33,9 @@ for s in scripts:
 
     vocab = vocab_str.split()
     vocab_stats = Counter(vocab)
-    stats_json = json.dumps(list(vocab_stats.items()))
+    stats_formatted = list(vocab_stats.items())
+    stats_formatted.sort(key=lambda tup: tup[1], reverse=True)
+    stats_json = json.dumps(stats_formatted)
 
     print(len(vocab_stats), 'unique vocab found. Uploading...', end=' ')
 
