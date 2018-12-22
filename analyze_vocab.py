@@ -17,10 +17,20 @@ scripts = db.all('SELECT * FROM scripts;', back_as='dict')
 
 print(len(scripts), 'scripts found.')
 
+
+def clean(str):
+    bad_chars = [' ', '/', ':']
+
+    for c in bad_chars:
+        str = str.replace(c, '_')
+
+    return str
+
+
 for s in scripts:
     print(s['title'] + '...', end=' ')
 
-    filename = s['title'].replace(' ', '_').replace('/', '_') + '.txt'
+    filename = clean(s['title']) + '.txt'
     filename_vocab = filename + '_vocab.txt'
 
     with io.open(filename, 'w', encoding='utf8') as script_file:
@@ -39,8 +49,9 @@ for s in scripts:
 
     print(len(vocab_stats), 'unique vocab found. Uploading...', end=' ')
 
-    query = 'UPDATE scripts SET vocab_stats = %(stats)s WHERE id = %(id)s;'
+    query = 'UPDATE scripts SET n_unique_vocab = %(vocab)s, vocab_stats = %(stats)s WHERE id = %(id)s;'  # noqa: E501
     db.run(query, {
+        'vocab': len(vocab_stats),
         'stats': stats_json,
         'id': s['id']
     })
