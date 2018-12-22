@@ -11,9 +11,9 @@ print('Connecting to DB...')
 with open('db_url.txt', 'r') as db_url:
     db = Postgres(db_url.readline().strip())
 
-print('Downloading scripts...')
+print('Loading scripts...')
 
-scripts = db.all('SELECT * FROM scripts;', back_as='dict')
+scripts = db.all('SELECT id, title FROM scripts;', back_as='dict')
 
 print(len(scripts), 'scripts found.')
 
@@ -30,11 +30,18 @@ def clean(str):
 for s in scripts:
     print(s['title'] + '...', end=' ')
 
-    filename = clean(s['title']) + '.txt'
+    filename = 'scripts\\' + clean(s['title']) + '.txt'
     filename_vocab = filename + '_vocab.txt'
 
-    with io.open(filename, 'w', encoding='utf8') as script_file:
-        script_file.write(s['script'])
+    if not os.path.isfile(filename):
+        script = db.one(
+            'SELECT script FROM scripts WHERE id = %(id)s;',
+            {'id': s['id']},
+            back_as='dict'
+        )
+
+        with io.open(filename, 'w', encoding='utf8') as script_file:
+            script_file.write(script)
 
     os.system('"' + mecab_location + '" ' + filename + ' -o ' + filename_vocab + ' -O wakati')  # noqa: E501
 
@@ -58,5 +65,5 @@ for s in scripts:
 
     print('Done.')
 
-    os.remove(filename)
+    # os.remove(filename)
     os.remove(filename_vocab)
