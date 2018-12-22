@@ -20,7 +20,7 @@ print(len(scripts), 'scripts found.')
 for s in scripts:
     print(s['title'] + '...', end=' ')
 
-    filename = s['title'].replace(' ', '_') + '.txt'
+    filename = s['title'].replace(' ', '_').replace('/', '_') + '.txt'
     filename_vocab = filename + '_vocab.txt'
 
     with io.open(filename, 'w', encoding='utf8') as script_file:
