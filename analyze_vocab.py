@@ -13,9 +13,12 @@ with open('db_url.txt', 'r') as db_url:
 
 print('Loading scripts...')
 
-scripts = db.all('SELECT id, title FROM scripts;', back_as='dict')
+scripts = db.all(
+    'SELECT id, title FROM scripts WHERE vocab_stats IS NULL;',
+    back_as='dict'
+)
 
-print(len(scripts), 'scripts found.')
+print(len(scripts), 'scripts to analyze.')
 
 
 def clean(str):

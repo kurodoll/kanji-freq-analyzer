@@ -21,14 +21,12 @@ def analyze(script, analyzed_once=False):
     print(len(kanji_counts.keys()), 'unique characters in', script['filename'])
 
     if not analyzed_once:
-        with db.get_cursor() as cursor:
-            for kanji in tqdm(kanji_counts.keys()):
-                query = 'INSERT INTO kanji (character, count) VALUES (%(kanji)s, %(count)s) ON CONFLICT (character) DO UPDATE SET count = kanji.count + %(count)s;'  # noqa: E501
-                cursor.execute(query, {
-                    'kanji': kanji,
-                    'count': kanji_counts[kanji]
-                })
+        query = ''
 
+        for kanji in tqdm(kanji_counts.keys()):
+            query += 'INSERT INTO kanji (character, count) VALUES (\'' + kanji + '\', ' + kanji_counts[kanji] + ') ON CONFLICT (character) DO UPDATE SET count = kanji.count + ' + kanji_counts[kanji] + ';'  # noqa: E501
+
+        db.run(query)
         db.run(
             "UPDATE scripts SET status = 'complete' WHERE id = %(id)s",
             {'id': script['id']})
