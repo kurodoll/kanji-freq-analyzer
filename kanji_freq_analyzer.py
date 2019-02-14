@@ -24,7 +24,7 @@ def analyze(script, analyzed_once=False):
         query = ''
 
         for kanji in tqdm(kanji_counts.keys()):
-            query += 'INSERT INTO kanji (character, count) VALUES (\'' + kanji + '\', ' + kanji_counts[kanji] + ') ON CONFLICT (character) DO UPDATE SET count = kanji.count + ' + kanji_counts[kanji] + ';'  # noqa: E501
+            query += 'INSERT INTO kanji (character, count) VALUES (\'' + kanji + '\', ' + str(kanji_counts[kanji]) + ') ON CONFLICT (character) DO UPDATE SET count = kanji.count + ' + str(kanji_counts[kanji]) + ';'  # noqa: E501
 
         db.run(query)
         db.run(
