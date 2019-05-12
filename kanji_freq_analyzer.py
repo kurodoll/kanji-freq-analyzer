@@ -4,41 +4,58 @@ import os
 from postgres import Postgres
 from tqdm import tqdm
 
+import psycopg2
+
 with open('db_url.txt', 'r') as db_url:
     db = Postgres(db_url.readline().strip())
 
 
 # * Functions
-def analyze(script, analyzed_once=False):
+def analyze(script, analyzed_once=False, redo_all=False):
     kanji_counts = {}
 
     for c in script['script']:
-        if c not in kanji_counts.keys():
-            kanji_counts[c] = 1
-        else:
-            kanji_counts[c] += 1
+        if (c >= '\u4e00' and c <= '\u9faf') or (c >= '\u3400' and c <= '\u4dbf'):  # noqa: E501
+            if c not in kanji_counts.keys():
+                kanji_counts[c] = 1
+            else:
+                kanji_counts[c] += 1
 
     print(len(kanji_counts.keys()), 'unique characters in', script['filename'])
 
-    if not analyzed_once:
+    if (not analyzed_once) or redo_all:
         query = ''
+        count = 0
 
         for kanji in tqdm(kanji_counts.keys()):
             query += 'INSERT INTO kanji (character, count) VALUES (\'' + kanji + '\', ' + str(kanji_counts[kanji]) + ') ON CONFLICT (character) DO UPDATE SET count = kanji.count + ' + str(kanji_counts[kanji]) + ';'  # noqa: E501
+            count += 1
 
-        db.run(query)
-        db.run(
-            "UPDATE scripts SET status = 'complete' WHERE id = %(id)s",
-            {'id': script['id']})
+            if count == 100:
+                try:
+                    db.run(query)
+                except psycopg2.ProgrammingError as e:
+                    print('Failure:', e)
+
+                query = ''
+                count = 0
+
+        if query:
+            try:
+                db.run(query)
+            except psycopg2.ProgrammingError as e:
+                print('Failure:', e)
+
+    db.run(
+        "UPDATE scripts SET status = 'complete' WHERE id = %(id)s",
+        {'id': script['id']})
 
     kanji_counts_formatted = []
     n_unique_kanji = 0
 
     for kanji in kanji_counts.keys():
         kanji_counts_formatted.append([kanji, kanji_counts[kanji]])
-
-        if (kanji >= '\u4e00' and kanji <= '\u9faf') or (kanji >= '\u3400' and kanji <= '\u4dbf'):  # noqa: E501
-            n_unique_kanji += 1
+        n_unique_kanji += 1
 
     kanji_counts_formatted.sort(key=lambda tup: tup[1], reverse=True)
     stats_json = json.dumps(kanji_counts_formatted)
@@ -100,9 +117,11 @@ for script in to_analyze:
 
 print('\nScripts without stats saved will now be analyzed')
 reanalyze = input('Reanalyze all scripts? (y/n) ')
+redo_all = False
 
 if reanalyze == 'y' or reanalyze == 'Y':
     query = "SELECT * FROM scripts;"
+    redo_all = True
 else:
     query = "SELECT * FROM scripts WHERE n_unique_kanji IS NULL OR kanji_stats IS NULL;"  # noqa: E501
 
@@ -111,4 +130,4 @@ analyze_stats_queue = db.all(query, back_as='dict')
 print(len(analyze_stats_queue), 'scripts to analyze')
 
 for script in analyze_stats_queue:
-    analyze(script, True)
+    analyze(script, True, redo_all)
